@@ -2,19 +2,19 @@ use std::io::Read;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use ssh2::{Channel, Session};
-use tracing::{error, info};
+use ssh2::Session;
+use tracing::info;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Bash {
-    name: String,
-    command: String,
+    pub name: String,
+    pub command: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct BashScript {
-    name: String,
-    script: Vec<String>,
+    pub name: String,
+    pub script: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -24,7 +24,7 @@ pub enum Task {
 }
 
 impl Task {
-    pub fn run(&self, sess: &mut Session) -> Result<()> {
+    pub fn run(&self, sess: &mut Session) -> Result<i32> {
         match self {
             Self::Bash(bash) => bash_command(bash, sess),
             Self::BashScript(b_script) => bash_script(b_script, sess),
@@ -32,7 +32,7 @@ impl Task {
     }
 }
 
-fn remote_cmd(command: &String, sess: &mut Session) -> Result<()> {
+fn remote_cmd(command: &String, sess: &mut Session) -> Result<i32> {
     let mut channel = sess.channel_session()?;
     channel.exec(&command)?;
 
@@ -46,24 +46,30 @@ fn remote_cmd(command: &String, sess: &mut Session) -> Result<()> {
     channel.wait_close()?;
 
     let exit_status = channel.exit_status()?;
-    if exit_status > 0 {
-        error!("exited with error code: {:}", exit_status);
-    }
-    Ok(())
+
+    Ok(exit_status)
 }
 
-fn bash_command(bash: &Bash, sess: &mut Session) -> Result<()> {
+fn bash_command(bash: &Bash, sess: &mut Session) -> Result<i32> {
     info!("--- {} ---", bash.name);
-    remote_cmd(&bash.command, sess)?;
-    Ok(())
+    let exit_status = remote_cmd(&bash.command, sess)?;
+    Ok(exit_status)
 }
 
-fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<()> {
+fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
     info!("--- {} ---", b_script.name);
 
-    for command in b_script.script.iter() {
-        remote_cmd(command, sess)?;
+    let failed = b_script
+        .script
+        .iter()
+        .map(|cmd| remote_cmd(cmd, sess).unwrap_or_default()) // #TODO: Check
+        .filter(|exit_status| *exit_status > 0)
+        .collect::<Vec<i32>>();
+
+    if !failed.is_empty() {
+        let last = failed[0];
+        return Ok(last);
     }
 
-    Ok(())
+    Ok(0)
 }

@@ -12,12 +12,17 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use ssh2::Session;
 use task::Task;
-use tracing::info;
+use tracing::{error, info};
 
 mod args;
 mod task;
 
-type Scroll = Vec<Task>;
+type Tasks = Vec<Task>;
+
+struct Scroll {
+    name: String,
+    tasks: Tasks,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Host {
@@ -41,14 +46,25 @@ fn parse_hosts(root_path: &Path) -> Hosts {
     hosts
 }
 
-fn parse_scroll(scroll_dir_path: &PathBuf) -> Scroll {
+fn parse_scroll(scroll_dir_path: &PathBuf) -> Result<Scroll> {
     let mut file =
         fs::File::open(scroll_dir_path.join("main.yml")).expect("Could not open hosts.yaml!");
     let mut str_buf = String::new();
     file.read_to_string(&mut str_buf)
         .expect("Could not read hosts.yaml!");
-    let tasks: Scroll = serde_yaml::from_str(&str_buf).unwrap();
-    tasks
+    let tasks: Tasks = serde_yaml::from_str(&str_buf).unwrap();
+
+    let scroll_name = scroll_dir_path
+        .file_name()
+        .unwrap()
+        .to_os_string()
+        .into_string()
+        .unwrap(); // TODO: Check
+
+    Ok(Scroll {
+        name: scroll_name,
+        tasks: tasks,
+    })
 }
 
 fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
@@ -67,8 +83,23 @@ fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
     }
 
     for scroll in scrolls.iter().rev() {
-        for task in scroll {
-            task.run(&mut sess)?;
+        for task in scroll.tasks.iter() {
+            
+            let exit_status = match task.run(&mut sess) {
+                Ok(it) => it,
+                Err(err) => {
+                    error!("Argus error occured in task: {:?}", err);
+                    break; 
+                },
+            };
+
+            if exit_status > 0 {
+                error!(
+                    "Task in Scroll {} exited with error code {}",
+                    scroll.name, exit_status
+                );
+                break;
+            }
         }
     }
     Ok(())
@@ -90,7 +121,7 @@ fn main() -> Result<()> {
 
     let scrolls: Vec<Scroll> = scrolls_path
         .iter()
-        .map(|scroll_path| parse_scroll(scroll_path))
+        .map(|scroll_path| parse_scroll(scroll_path).unwrap())
         .collect();
 
     // Add identity to ssh agent
