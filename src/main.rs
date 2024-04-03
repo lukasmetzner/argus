@@ -10,60 +10,14 @@ use anyhow::Result;
 use clap::Parser;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use ssh2::{Channel, Session};
-use tracing::{error, info};
+use ssh2::Session;
+use task::Task;
+use tracing::info;
+
+mod args;
+mod task;
 
 type Scroll = Vec<Task>;
-
-
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Name of the person to greet
-    #[arg(short, long)]
-    project_path: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-struct Bash {
-    name: String,
-    command: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-enum Task {
-    Bash(Bash),
-}
-
-impl Task {
-    pub fn run(&self, channel: &mut Channel) -> Result<()> {
-        match self {
-            Self::Bash(bash) => bash_command(bash, channel),
-        }
-    }
-}
-
-fn bash_command(bash: &Bash, channel: &mut Channel) -> Result<()> {
-    info!("--- {} ---", bash.name);
-    channel.exec(&bash.command)?;
-
-    let mut output = String::new();
-    channel.read_to_string(&mut output)?;
-
-    for line in output.lines() {
-        info!("{}", line);
-    }
-
-    channel.wait_close()?;
-
-    let exit_status = channel.exit_status()?;
-    if exit_status > 0 {
-        error!("exited with error code: {:}", exit_status);
-    }
-
-    Ok(())
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Host {
@@ -112,10 +66,9 @@ fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
         panic!("Session not authenticated");
     }
 
-    for scroll in scrolls {
+    for scroll in scrolls.iter().rev() {
         for task in scroll {
-            let mut scroll_channel = sess.channel_session()?;
-            task.run(&mut scroll_channel)?;
+            task.run(&mut sess)?;
         }
     }
     Ok(())
@@ -124,7 +77,7 @@ fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
 fn main() -> Result<()> {
     tracing_subscriber::fmt().init();
 
-    let args = Args::parse();
+    let args = args::Args::parse();
 
     let root_path = Path::new(&args.project_path);
     let hosts = parse_hosts(&root_path);

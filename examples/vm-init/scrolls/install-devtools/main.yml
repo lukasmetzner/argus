@@ -1,0 +1,11 @@
+- !BashScript
+    name: basic tools
+    script:
+    - "apt install -y tmux"
+    - "apt install -y vim"
+    - "apt install -y git"
+    - "apt install -y htop"
+
+- !Bash
+    name: clang
+    command: "apt install -y clang"
