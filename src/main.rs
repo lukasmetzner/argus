@@ -84,13 +84,12 @@ fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
 
     for scroll in scrolls.iter().rev() {
         for task in scroll.tasks.iter() {
-            
             let exit_status = match task.run(&mut sess) {
                 Ok(it) => it,
                 Err(err) => {
                     error!("Argus error occured in task: {:?}", err);
-                    break; 
-                },
+                    break;
+                }
             };
 
             if exit_status > 0 {
@@ -115,14 +114,19 @@ fn main() -> Result<()> {
 
     let scrolls_path = fs::read_dir(root_path.join("scrolls"))?
         .into_iter()
-        .map(|path| path.unwrap().path())
+        .map(|path| {
+            let path = path?.path();
+            Ok(path)
+        })
+        .collect::<Result<Vec<PathBuf>>>()?
+        .into_iter()
         .filter(|path| path.is_dir())
         .collect::<Vec<PathBuf>>();
 
     let scrolls: Vec<Scroll> = scrolls_path
         .iter()
-        .map(|scroll_path| parse_scroll(scroll_path).unwrap())
-        .collect();
+        .map(|scroll_path| parse_scroll(scroll_path))
+        .collect::<Result<Vec<Scroll>>>()?;
 
     // Add identity to ssh agent
     let output = Command::new("ssh-add").arg(hosts.pubkey_path).output()?;

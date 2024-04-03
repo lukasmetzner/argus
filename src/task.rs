@@ -62,7 +62,12 @@ fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
     let failed = b_script
         .script
         .iter()
-        .map(|cmd| remote_cmd(cmd, sess).unwrap_or_default()) // #TODO: Check
+        .map(|cmd| {
+            let exit_status = remote_cmd(cmd, sess)?;
+            Ok(exit_status)
+        }) // #TODO: Check
+        .collect::<Result<Vec<i32>>>()?
+        .into_iter()
         .filter(|exit_status| *exit_status > 0)
         .collect::<Vec<i32>>();
 
