@@ -1,0 +1,7 @@
+- !Bash
+    name: update
+    command: "apt update"
+
+- !Bash
+    name: upgrade
+    command: "DEBIAN_FRONTEND=noninteractive apt upgrade -y"
