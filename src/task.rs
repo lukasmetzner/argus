@@ -3,7 +3,7 @@ use std::io::Read;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use ssh2::Session;
-use tracing::info;
+use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Bash {
@@ -32,7 +32,7 @@ impl Task {
     }
 }
 
-fn remote_cmd(command: &String, sess: &mut Session) -> Result<i32> {
+fn remote_exec(command: &String, sess: &mut Session) -> Result<i32> {
     let mut channel = sess.channel_session()?;
     channel.exec(&command)?;
 
@@ -40,7 +40,7 @@ fn remote_cmd(command: &String, sess: &mut Session) -> Result<i32> {
     channel.read_to_string(&mut output)?;
 
     for line in output.lines() {
-        info!("{}", line);
+        debug!("{}", line);
     }
 
     channel.wait_close()?;
@@ -52,7 +52,7 @@ fn remote_cmd(command: &String, sess: &mut Session) -> Result<i32> {
 
 fn bash_command(bash: &Bash, sess: &mut Session) -> Result<i32> {
     info!("--- {} ---", bash.name);
-    let exit_status = remote_cmd(&bash.command, sess)?;
+    let exit_status = remote_exec(&bash.command, sess)?;
     Ok(exit_status)
 }
 
@@ -63,7 +63,7 @@ fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
         .script
         .iter()
         .map(|cmd| {
-            let exit_status = remote_cmd(cmd, sess)?;
+            let exit_status = remote_exec(cmd, sess)?;
             Ok(exit_status)
         }) // #TODO: Check
         .collect::<Result<Vec<i32>>>()?
