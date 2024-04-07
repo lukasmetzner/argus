@@ -59,7 +59,7 @@ fn bash_command(bash: &Bash, sess: &mut Session) -> Result<i32> {
 fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
     info!("--- {} ---", b_script.name);
 
-    let failed = b_script
+    let exit_codes = b_script
         .script
         .iter()
         .map(|cmd| {
@@ -68,12 +68,12 @@ fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
         }) // #TODO: Check
         .collect::<Result<Vec<i32>>>()?
         .into_iter()
-        .filter(|exit_status| *exit_status > 0)
         .collect::<Vec<i32>>();
 
+    let failed = exit_codes.iter().filter(|f| f > &&0).collect::<Vec<&i32>>();
+
     if !failed.is_empty() {
-        let last = failed[0];
-        return Ok(last);
+        return Ok(failed[0].to_owned());
     }
 
     Ok(0)
