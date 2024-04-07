@@ -10,12 +10,15 @@ use rayon::prelude::*;
 use scrolls::Scroll;
 use tracing::info;
 
-use crate::{hosts::{exec_hosts, parse_hosts}, scrolls::parse_scroll};
+use crate::{
+    hosts::{exec_hosts, parse_hosts},
+    scrolls::parse_scroll,
+};
 
 mod args;
-mod tasks;
-mod scrolls;
 mod hosts;
+mod scrolls;
+mod tasks;
 
 fn main() -> Result<()> {
     tracing_subscriber::fmt().init();
@@ -49,7 +52,8 @@ fn main() -> Result<()> {
     hosts
         .hosts
         .into_par_iter()
-        .for_each(|host| exec_hosts(host, &scrolls).unwrap());
+        .map(|host| exec_hosts(host, &scrolls))
+        .collect::<Result<Vec<()>>>()?;
 
     Ok(())
 }
