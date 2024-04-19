@@ -1,4 +1,8 @@
-use std::io::Read;
+use std::{
+    fs,
+    io::{BufReader, Read, Write},
+    path::Path,
+};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -18,9 +22,17 @@ pub struct BashScript {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct File {
+    pub name: String,
+    pub source: Box<Path>,
+    pub destination: Box<Path>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum Task {
     Bash(Bash),
     BashScript(BashScript),
+    File(File),
 }
 
 impl Task {
@@ -28,8 +40,34 @@ impl Task {
         match self {
             Self::Bash(bash) => bash_command(bash, sess),
             Self::BashScript(b_script) => bash_script(b_script, sess),
+            Self::File(file) => push_file(file, sess),
         }
     }
+}
+
+fn push_file(file: &File, sess: &mut Session) -> Result<i32> {
+    info!("--- {} ---", file.name);
+
+    let file_io = fs::OpenOptions::new().read(true).open(&file.source)?;
+    let mut buf_reader = BufReader::new(file_io);
+
+    let sftp = sess.sftp()?;
+    let mut sftp_file = sftp.create(&file.destination)?;
+
+    let mut buffer = vec![0; 8192]; // A buffer of 8 KB
+
+    loop {
+        let len = buf_reader.read(&mut buffer)?;
+        if len == 0 {
+            break; // End of file reached
+        }
+        sftp_file.write_all(&buffer[..len])?;
+    }
+
+    sftp_file.flush()?;
+    info!("Wrote to destination path {:?}", file.destination);
+
+    Ok(0)
 }
 
 fn remote_exec(command: &str, sess: &mut Session) -> Result<i32> {
@@ -39,9 +77,7 @@ fn remote_exec(command: &str, sess: &mut Session) -> Result<i32> {
     let mut output = String::new();
     channel.read_to_string(&mut output)?;
 
-    for line in output.lines() {
-        debug!("{}", line);
-    }
+    output.lines().for_each(|line| debug!("{line}"));
 
     channel.wait_close()?;
 

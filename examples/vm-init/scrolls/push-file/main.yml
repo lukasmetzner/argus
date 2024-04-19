@@ -1,0 +1,4 @@
+- !File
+    name: "config push"
+    source: "./scrolls/push-file/files/config.json"
+    destination: "/root/config.json"

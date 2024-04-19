@@ -9,6 +9,7 @@ use clap::Parser;
 use rayon::prelude::*;
 use scrolls::Scroll;
 use tracing::info;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use crate::{
     hosts::{exec_hosts, parse_hosts},
@@ -21,7 +22,10 @@ mod scrolls;
 mod tasks;
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_env("LOG"))
+        .init();
 
     let args = args::Args::parse();
 
@@ -44,7 +48,7 @@ fn main() -> Result<()> {
         .collect::<Result<Vec<Scroll>>>()?;
 
     // Add identity to ssh agent
-    let output = Command::new("ssh-add").arg(hosts.pubkey_path).output()?;
+    let output = Command::new("ssh-add").output()?;
     let o_string = String::from_utf8(output.stdout)?;
     info!("{}", o_string);
 
