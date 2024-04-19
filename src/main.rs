@@ -1,5 +1,4 @@
 use std::{
-    fs,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -32,14 +31,11 @@ fn main() -> Result<()> {
     let root_path = Path::new(&args.project_path);
     let hosts = parse_hosts(root_path);
 
-    let scrolls_path = fs::read_dir(root_path.join("scrolls"))?
-        .map(|path| {
-            let path = path?.path();
-            Ok(path)
-        })
-        .collect::<Result<Vec<PathBuf>>>()?
-        .into_iter()
-        .filter(|path| path.is_dir())
+    let scrolls_path = hosts
+        .scrolls
+        .iter()
+        .rev()
+        .map(|scroll_name| PathBuf::from(format!("./scrolls/{scroll_name}/")))
         .collect::<Vec<PathBuf>>();
 
     let scrolls: Vec<Scroll> = scrolls_path

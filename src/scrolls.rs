@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::tasks::Task;
 
+#[derive(Debug)]
 pub struct Scroll {
     pub name: String,
     pub tasks: Vec<Task>,

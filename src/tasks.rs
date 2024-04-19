@@ -65,7 +65,6 @@ fn push_file(file: &File, sess: &mut Session) -> Result<i32> {
     }
 
     sftp_file.flush()?;
-    info!("Wrote to destination path {:?}", file.destination);
 
     Ok(0)
 }
