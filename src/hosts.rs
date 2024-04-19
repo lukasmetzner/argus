@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::Read,
-    net::TcpStream,
-    path::Path,
-};
+use std::{fs, io::Read, net::TcpStream, path::Path};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -33,7 +28,7 @@ pub fn parse_hosts(root_path: &Path) -> Hosts {
     hosts
 }
 
-pub fn exec_hosts(host: Host, scrolls: &Vec<Scroll>) -> Result<()> {
+pub fn exec_hosts(host: Host, scrolls: &[Scroll]) -> Result<()> {
     info!("=========== {} ===========", &host.host);
     info!("Executing scrolls on host {}", host.host);
     let tcp = TcpStream::connect(format!("{}:22", &host.host))?;

@@ -26,10 +26,9 @@ fn main() -> Result<()> {
     let args = args::Args::parse();
 
     let root_path = Path::new(&args.project_path);
-    let hosts = parse_hosts(&root_path);
+    let hosts = parse_hosts(root_path);
 
     let scrolls_path = fs::read_dir(root_path.join("scrolls"))?
-        .into_iter()
         .map(|path| {
             let path = path?.path();
             Ok(path)

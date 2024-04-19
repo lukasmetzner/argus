@@ -32,9 +32,9 @@ impl Task {
     }
 }
 
-fn remote_exec(command: &String, sess: &mut Session) -> Result<i32> {
+fn remote_exec(command: &str, sess: &mut Session) -> Result<i32> {
     let mut channel = sess.channel_session()?;
-    channel.exec(&command)?;
+    channel.exec(command)?;
 
     let mut output = String::new();
     channel.read_to_string(&mut output)?;

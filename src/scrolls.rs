@@ -1,8 +1,4 @@
-use std::{
-    fs,
-    io::Read,
-    path::PathBuf,
-};
+use std::{fs, io::Read, path::Path};
 
 use anyhow::Result;
 
@@ -13,7 +9,7 @@ pub struct Scroll {
     pub tasks: Vec<Task>,
 }
 
-pub fn parse_scroll(scroll_dir_path: &PathBuf) -> Result<Scroll> {
+pub fn parse_scroll(scroll_dir_path: &Path) -> Result<Scroll> {
     let mut file =
         fs::File::open(scroll_dir_path.join("main.yml")).expect("Could not open hosts.yaml!");
     let mut str_buf = String::new();
@@ -30,6 +26,6 @@ pub fn parse_scroll(scroll_dir_path: &PathBuf) -> Result<Scroll> {
 
     Ok(Scroll {
         name: scroll_name,
-        tasks: tasks,
+        tasks,
     })
 }
