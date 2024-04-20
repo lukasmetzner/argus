@@ -1,7 +1,12 @@
-- !Bash
-    name: update
+- name: update
+  task_exec: !Bash
     command: "apt update"
 
-- !Bash
-    name: upgrade
+- name: upgrade
+  task_exec: !Bash
     command: "DEBIAN_FRONTEND=noninteractive apt upgrade -y"
+
+- name: "config push"
+  task_exec: !File
+    source: "./scrolls/init-setup/files/config.json"
+    destination: "/root/config.json"

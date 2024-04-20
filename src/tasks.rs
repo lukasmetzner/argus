@@ -10,26 +10,29 @@ use ssh2::Session;
 use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Bash {
+pub struct Task {
     pub name: String,
+    pub task_exec: TaskExec,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Bash {
     pub command: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct BashScript {
-    pub name: String,
     pub script: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct File {
-    pub name: String,
     pub source: Box<Path>,
     pub destination: Box<Path>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub enum Task {
+pub enum TaskExec {
     Bash(Bash),
     BashScript(BashScript),
     File(File),
@@ -37,17 +40,16 @@ pub enum Task {
 
 impl Task {
     pub fn run(&self, sess: &mut Session) -> Result<i32> {
-        match self {
-            Self::Bash(bash) => bash_command(bash, sess),
-            Self::BashScript(b_script) => bash_script(b_script, sess),
-            Self::File(file) => push_file(file, sess),
+        info!("--- {} ---", self.name);
+        match &self.task_exec {
+            TaskExec::Bash(bash) => bash_command(bash, sess),
+            TaskExec::BashScript(b_script) => bash_script(b_script, sess),
+            TaskExec::File(file) => push_file(file, sess),
         }
     }
 }
 
 fn push_file(file: &File, sess: &mut Session) -> Result<i32> {
-    info!("--- {} ---", file.name);
-
     let file_io = fs::OpenOptions::new().read(true).open(&file.source)?;
     let mut buf_reader = BufReader::new(file_io);
 
@@ -86,14 +88,11 @@ fn remote_exec(command: &str, sess: &mut Session) -> Result<i32> {
 }
 
 fn bash_command(bash: &Bash, sess: &mut Session) -> Result<i32> {
-    info!("--- {} ---", bash.name);
     let exit_status = remote_exec(&bash.command, sess)?;
     Ok(exit_status)
 }
 
 fn bash_script(b_script: &BashScript, sess: &mut Session) -> Result<i32> {
-    info!("--- {} ---", b_script.name);
-
     let exit_codes = b_script
         .script
         .iter()

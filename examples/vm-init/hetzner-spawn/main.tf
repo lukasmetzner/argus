@@ -14,7 +14,7 @@ provider "hcloud" {
 # Create a server
 # Create a new server running debian
 resource "hcloud_server" "node1" {
-  count		     = 4
+  count		     = 1
   name         = "argus-tests-${count.index}"
   image        = "ubuntu-22.04"
   server_type  = "cpx11"
