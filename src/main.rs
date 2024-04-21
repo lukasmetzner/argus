@@ -17,6 +17,7 @@ use crate::{
 
 mod args;
 mod hosts;
+mod modules;
 mod scrolls;
 mod tasks;
 
@@ -31,11 +32,12 @@ fn main() -> Result<()> {
     let root_path = Path::new(&args.project_path);
     let hosts = parse_hosts(root_path);
 
+    let scrolls_root_path = root_path.join("scrolls");
     let scrolls_path = hosts
         .scrolls
         .iter()
         .rev()
-        .map(|scroll_name| PathBuf::from(format!("./scrolls/{scroll_name}/")))
+        .map(|scroll_name| scrolls_root_path.join(scroll_name))
         .collect::<Vec<PathBuf>>();
 
     let scrolls: Vec<Scroll> = scrolls_path

@@ -7,6 +7,6 @@
     command: "DEBIAN_FRONTEND=noninteractive apt upgrade -y"
 
 - name: "config push"
-  task_exec: !File
-    source: "./scrolls/init-setup/files/config.json"
+  task_exec: !FileSync
+    source: "./files/config.json"
     destination: "/root/config.json"

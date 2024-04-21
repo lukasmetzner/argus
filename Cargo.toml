@@ -13,4 +13,4 @@ serde = { version = "1.0.197", features = ["derive"] }
 serde_yaml = "0.9.33"
 ssh2 = "0.9.4"
 tracing = "0.1.40"
-tracing-subscriber = { verison = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

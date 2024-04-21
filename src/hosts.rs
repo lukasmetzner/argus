@@ -3,7 +3,7 @@ use std::{fs, io::Read, net::TcpStream, path::Path};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use ssh2::Session;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::scrolls::Scroll;
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,7 +20,10 @@ pub struct Hosts {
 }
 
 pub fn parse_hosts(root_path: &Path) -> Hosts {
-    let mut file = fs::File::open(root_path.join("hosts.yml")).expect("Could not open hosts.yaml!");
+    debug!("{:?}", root_path);
+    let hosts_path = root_path.join("hosts.yml");
+    debug!("{:?}", hosts_path);
+    let mut file = fs::File::open(hosts_path).expect("Could not open hosts.yaml!");
     let mut str_buf = String::new();
     file.read_to_string(&mut str_buf)
         .expect("Could not read hosts.yaml!");
