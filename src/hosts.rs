@@ -16,7 +16,7 @@ use crate::scrolls::Scroll;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Host {
     pub host: String,
-    pub pubkey_path: PathBuf, 
+    pub pubkey_path: PathBuf,
     pub privkey_path: PathBuf,
     pub ssh_passphrase: Option<String>,
     pub user: Option<String>,
