@@ -45,11 +45,6 @@ fn main() -> Result<()> {
         .map(|scroll_path| parse_scroll(scroll_path))
         .collect::<Result<Vec<Scroll>>>()?;
 
-    // Add identity to ssh agent
-    let output = Command::new("ssh-add").output()?;
-    let o_string = String::from_utf8(output.stdout)?;
-    info!("{}", o_string);
-
     hosts
         .hosts
         .into_par_iter()

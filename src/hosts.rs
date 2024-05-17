@@ -16,6 +16,9 @@ use crate::scrolls::Scroll;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Host {
     pub host: String,
+    pub pubkey_path: PathBuf, 
+    pub privkey_path: PathBuf,
+    pub ssh_passphrase: Option<String>,
     pub user: Option<String>,
 }
 
@@ -66,14 +69,13 @@ fn _exec_hosts(host: Host, scrolls: Vec<Scroll>) -> Result<()> {
     info!("Before Auth");
 
     let user = host.user.unwrap_or("root".to_string());
-    sess.userauth_agent(&user).unwrap();
-    //sess.userauth_pubkey_file(
-    //    &user,
-    //    Some(&PathBuf::from("/Users/lukasmetzner/.ssh/id_ed25519.pub")),
-    //    &PathBuf::from("/Users/lukasmetzner/.ssh/id_ed25519"),
-    //    None,
-    //)
-    //.unwrap();
+    sess.userauth_pubkey_file(
+        &user,
+        Some(&host.pubkey_path),
+        &host.privkey_path,
+        host.ssh_passphrase.as_deref(),
+    )
+    .unwrap();
 
     if !sess.authenticated() {
         panic!("Session not authenticated");
