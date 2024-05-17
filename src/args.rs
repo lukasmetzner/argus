@@ -5,4 +5,7 @@ use clap::Parser;
 pub struct Args {
     #[arg(short, long)]
     pub project_path: String,
+
+    #[arg(long, default_value_t = false)]
+    pub pcap: bool,
 }

@@ -53,7 +53,7 @@ fn main() -> Result<()> {
     hosts
         .hosts
         .into_par_iter()
-        .map(|host| exec_hosts(host, &scrolls))
+        .map(|host| exec_hosts(host, scrolls.clone(), args.pcap))
         .collect::<Result<Vec<()>>>()?;
 
     Ok(())

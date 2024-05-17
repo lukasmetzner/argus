@@ -7,19 +7,19 @@ use tracing::info;
 
 use crate::modules::{bash::Bash, bash_script::BashScript, file_sync::FileSync};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TaskContainer {
     pub scroll_dir_path: PathBuf,
     pub task: Task,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Task {
     pub name: String,
     pub task_exec: TaskExec,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum TaskExec {
     Bash(Bash),
     BashScript(BashScript),

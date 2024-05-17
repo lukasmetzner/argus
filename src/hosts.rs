@@ -1,22 +1,28 @@
-use std::{fs, io::Read, net::TcpStream, path::Path};
+use std::{
+    fs,
+    io::Read,
+    net::TcpStream,
+    path::{Path, PathBuf},
+    thread::{self, JoinHandle},
+};
 
 use anyhow::Result;
+use pcap::{Capture, Device};
 use serde::{Deserialize, Serialize};
 use ssh2::Session;
 use tracing::{debug, error, info};
 
 use crate::scrolls::Scroll;
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Host {
     pub host: String,
     pub user: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Hosts {
     pub scrolls: Vec<String>,
     pub hosts: Vec<Host>,
-    pub pubkey_path: String,
 }
 
 pub fn parse_hosts(root_path: &Path) -> Hosts {
@@ -31,20 +37,49 @@ pub fn parse_hosts(root_path: &Path) -> Hosts {
     hosts
 }
 
-pub fn exec_hosts(host: Host, scrolls: &[Scroll]) -> Result<()> {
+pub fn exec_hosts(host: Host, scrolls: Vec<Scroll>, pcap: bool) -> Result<()> {
     info!("=========== {} ===========", &host.host);
-    info!("Executing scrolls on host {}", host.host);
+    info!("Executing scrolls on host {}", &host.host);
+
+    let host_c = host.host.clone();
+
+    // Execution in seperate thread to stop capture after scrolls are finished
+    let handle = thread::spawn(move || {
+        _exec_hosts(host, scrolls).unwrap();
+    });
+
+    if pcap {
+        capture(handle, host_c)?;
+    } else {
+        handle.join().unwrap();
+    }
+
+    Ok(())
+}
+
+fn _exec_hosts(host: Host, scrolls: Vec<Scroll>) -> Result<()> {
     let tcp = TcpStream::connect(format!("{}:22", &host.host))?;
     let mut sess = Session::new()?;
     sess.set_tcp_stream(tcp);
     sess.handshake()?;
 
+    info!("Before Auth");
+
     let user = host.user.unwrap_or("root".to_string());
-    sess.userauth_agent(&user)?;
+    sess.userauth_agent(&user).unwrap();
+    //sess.userauth_pubkey_file(
+    //    &user,
+    //    Some(&PathBuf::from("/Users/lukasmetzner/.ssh/id_ed25519.pub")),
+    //    &PathBuf::from("/Users/lukasmetzner/.ssh/id_ed25519"),
+    //    None,
+    //)
+    //.unwrap();
 
     if !sess.authenticated() {
         panic!("Session not authenticated");
     }
+
+    info!("Authenticated");
 
     for scroll in scrolls.iter().rev() {
         for task in scroll.tasks.iter() {
@@ -64,6 +99,30 @@ pub fn exec_hosts(host: Host, scrolls: &[Scroll]) -> Result<()> {
                 break;
             }
         }
+    }
+
+    Ok(())
+}
+
+fn capture(handle: JoinHandle<()>, host_c: String) -> Result<()> {
+    let device = Device::lookup()?.expect("no device available");
+    let mut cap = Capture::from_device(device)?.immediate_mode(true).open()?;
+
+    cap.filter(format!("host {}", host_c).as_str(), true)?;
+
+    let mut savefile = cap.savefile(format!("{}.pcap", host_c))?;
+
+    loop {
+        if handle.is_finished() {
+            break;
+        }
+
+        let packet = match cap.next_packet() {
+            Ok(it) => it,
+            Err(_) => break,
+        };
+
+        savefile.write(&packet);
     }
     Ok(())
 }

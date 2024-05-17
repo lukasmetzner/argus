@@ -4,7 +4,7 @@ use ssh2::Session;
 
 use super::utils::remote_exec;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct BashScript {
     pub script: Vec<String>,
 }

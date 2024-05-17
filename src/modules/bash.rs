@@ -5,7 +5,7 @@ use anyhow::Result;
 
 use super::utils::remote_exec;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Bash {
     pub command: String,
 }

@@ -14,3 +14,4 @@ serde_yaml = "0.9.33"
 ssh2 = "0.9.4"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+pcap = { version = "2", features = ["capture-stream"] }
